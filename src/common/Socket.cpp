@@ -2,10 +2,16 @@
 
 #include <cstddef>
 #include <cstring>
+
+#ifdef __linux__
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#elif _WIN32
+#include <WinSock2.h>
+#endif
+
 #include <iostream>
 
 Socket::Socket()
@@ -92,5 +98,9 @@ void Socket::recv(int fd, char* buffer, size_t size)
 
 void Socket::close()
 {
+#ifdef __linux__
     ::close(this->fileDesc);
+#elif _WIN32
+    ::closesocket(this->fileDesc);
+#endif
 }

@@ -4,9 +4,13 @@
 #include <cstddef>
 #include <cstring>
 #include <vector>
+#ifdef __linux__
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#elif _WIN32
+#include <WinSock2.h>
+#endif
 #include <string>
 
 class Socket

@@ -9,6 +9,10 @@ add_library(common
     src/common/Socket.cpp
 )
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_link_libraries(common ws2_32)
+endif()
+
 add_executable(master
     src/master/main.cpp
     src/master/MasterNode.cpp

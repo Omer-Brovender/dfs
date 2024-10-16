@@ -3,6 +3,13 @@
 
 int main()
 {
+#ifdef _WIN32
+    static WSADATA wsaData;
+    int wsaerr = WSAStartup(MAKEWORD(2, 0), &wsaData);
+    if (wsaerr)
+        exit(1);
+#endif
+
     Socket client;
 
     client.connect("127.0.0.1");
@@ -11,4 +18,5 @@ int main()
     client.send(msg.data(), msg.size());
 
     client.close();
+    getchar();
 }
