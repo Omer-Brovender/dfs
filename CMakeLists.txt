@@ -11,12 +11,14 @@ add_library(common
 
 add_executable(master
     src/master/main.cpp
+    src/master/MasterNode.cpp
 )
 
 target_link_libraries(master common)
 
 add_executable(client
     src/client/main.cpp
+    src/client/ClientNode.cpp
 )
 
 target_link_libraries(client common)

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstring>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
@@ -34,8 +35,9 @@ void Socket::listen(int maxListeners)
     ::listen(this->fileDesc, maxListeners);
 }
 
-void Socket::connect()
+void Socket::connect(std::string IP)
 {
+    this->serverAddress.sin_addr.s_addr = inet_addr(IP.c_str());
     if (::connect(this->fileDesc, (struct sockaddr*)&this->serverAddress, sizeof(this->serverAddress)) == -1) std::cout << "ERROR\n";
 }
 
@@ -86,4 +88,9 @@ void Socket::recv(int fd, char* buffer, size_t size)
         size,
         0
     ) == -1) std::cout << "ERROR\n";
+}
+
+void Socket::close()
+{
+    ::close(this->fileDesc);
 }

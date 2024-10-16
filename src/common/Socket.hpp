@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <string>
 
 class Socket
 {
@@ -17,7 +18,7 @@ private:
 
 public:
     Socket();
-    void connect();
+    void connect(std::string IP);
     void bind();
     void listen(int maxListeners);
     int accept();
@@ -27,6 +28,8 @@ public:
 
     void recv(char* buffer, size_t size);
     void recv(int fd, char* buffer, size_t size);
+
+    void close();
 
 };
 
