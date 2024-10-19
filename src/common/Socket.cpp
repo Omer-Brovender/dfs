@@ -25,7 +25,7 @@ Socket::Socket()
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(8080);
+    serverAddress.sin_port = htons(12347);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
     this->serverAddress = serverAddress;

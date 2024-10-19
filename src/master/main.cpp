@@ -1,4 +1,6 @@
+#include <chrono>
 #include <iostream>
+#include <thread>
 #include "../common/Socket.hpp"
 #include "MasterNode.hpp"
 
@@ -12,7 +14,7 @@ int main()
 #endif
     MasterNode master;
 
-    Socket server;
+    /*Socket server;
 
     server.bind();
     server.listen(1);
@@ -23,6 +25,6 @@ int main()
     std::string str;
     std::cout << std::string(&buffer[0]);
 
-    server.close();
+    server.close();*/
     getchar();
 }

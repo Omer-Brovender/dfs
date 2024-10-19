@@ -1,5 +1,7 @@
+#include <iostream>
 #include <string>
 #include "../common/Socket.hpp"
+#include "ClientNode.hpp"
 
 int main()
 {
@@ -10,13 +12,6 @@ int main()
         exit(1);
 #endif
 
-    Socket client;
-
-    client.connect("127.0.0.1");
-
-    std::string msg = "Hello, world!\n";
-    client.send(msg.data(), msg.size());
-
-    client.close();
+    ClientNode client("127.0.0.1");
     getchar();
 }
