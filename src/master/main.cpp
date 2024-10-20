@@ -26,5 +26,7 @@ int main()
     std::cout << std::string(&buffer[0]);
 
     server.close();*/
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    master.upload("...");
     getchar();
 }

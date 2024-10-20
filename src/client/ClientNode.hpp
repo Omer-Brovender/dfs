@@ -7,9 +7,10 @@ class ClientNode
 {
 private:
     Socket client;
-    void writeFile(std::wstring path, std::vector<char> data);
+    void writeFile(std::string path, std::vector<char>& data);
     void handleServer();
 public:
+    std::string saveDirectory;
     ClientNode(std::string serverIP);
     ~ClientNode();
 

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <errno.h>
 
 #ifdef __linux__
 #include <netinet/in.h>
@@ -20,7 +21,7 @@ Socket::Socket()
 
     if (this->fileDesc == -1)
     {
-        std::cout << "Error: could not initialize socket.\n";
+        std::cout << "Error: could not initialize socket. Error number: " << errno << "\n";
     }
 
     sockaddr_in serverAddress;
@@ -33,18 +34,21 @@ Socket::Socket()
 
 void Socket::bind()
 {
-    if (::bind(this->fileDesc, (struct sockaddr*)&this->serverAddress, sizeof(this->serverAddress)) == -1) std::cout << "ERROR\n";
+    if (::bind(this->fileDesc, (struct sockaddr*)&this->serverAddress, sizeof(this->serverAddress)) == -1) 
+        std::cout << "Failed to bind. Error number: " << errno << "\n";
 }
 
 void Socket::listen(int maxListeners)
 {
-    ::listen(this->fileDesc, maxListeners);
+    if (::listen(this->fileDesc, maxListeners) == -1)
+        std::cout << "Failed to listen. Error number: " << errno << "\n";
 }
 
 void Socket::connect(std::string IP)
 {
     this->serverAddress.sin_addr.s_addr = inet_addr(IP.c_str());
-    if (::connect(this->fileDesc, (struct sockaddr*)&this->serverAddress, sizeof(this->serverAddress)) == -1) std::cout << "ERROR\n";
+    if (::connect(this->fileDesc, (struct sockaddr*)&this->serverAddress, sizeof(this->serverAddress)) == -1)
+        std::cout << "Failed to connect. Error number: " << errno << "\n";
 }
 
 int Socket::accept()
@@ -60,7 +64,7 @@ void Socket::send(char* data, size_t size)
         data, 
         size, 
         0
-    ) == -1) std::cout << "ERROR\n";
+    ) == -1) std::cout << "Failed to send. Error number: " << errno << "\n";
 }
 
 void Socket::send(int fd, char* data, size_t size)
@@ -71,7 +75,7 @@ void Socket::send(int fd, char* data, size_t size)
         data, 
         size, 
         0
-    ) == -1) std::cout << "ERROR\n";
+    ) == -1) std::cout << "Failed to send. Error number: " << errno << "\n";
 }
 
 void Socket::recv(char* buffer, size_t size)
@@ -82,7 +86,7 @@ void Socket::recv(char* buffer, size_t size)
         buffer, 
         size,
         0
-    ) == -1) std::cout << "ERROR\n";
+    ) == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
 }
 
 void Socket::recv(int fd, char* buffer, size_t size)
@@ -93,7 +97,7 @@ void Socket::recv(int fd, char* buffer, size_t size)
         buffer, 
         size,
         0
-    ) == -1) std::cout << "ERROR\n";
+    ) == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
 }
 
 void Socket::close()
