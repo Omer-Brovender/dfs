@@ -44,6 +44,7 @@ std::vector<char> MasterNode::readFile(std::string path)
     std::vector<char> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     const auto size = std::filesystem::file_size(path);
     data.resize(size);
+
     return data;
 }
 
@@ -60,11 +61,16 @@ void MasterNode::uploadByProtocol(int client, std::string& filename, char* data,
     int filenameLength = filename.length();
 
     std::cout << filenameLength << "\n";
+    std::cout << "Data length: " << dataLength << "\n";
+    //std::cout << "Last elements: " << (data[128382] == (char)252 ? "passed" : "failed") << (data[128383] == (char)219 ? "passed" : "failed") << (data[128384] == 0 ? "passed" : "failed") << "\n";
 
-    this->server.send(client, (char*)&filenameLength, sizeof(int));
-    this->server.send(client, filename.data(), filenameLength);
-    this->server.send(client, (char*)&dataLength, sizeof(int));
-    this->server.send(client, data, dataLength);
+    for (int i = 0; i < dataLength; ++i)
+        if ((int)data[i] != i%16) std::cout << (int)data[i] << " " << i%16 << "\n";
+
+    this->server.sendall(client, (char*)&filenameLength, sizeof(int));
+    this->server.sendall(client, filename.data(), filenameLength);
+    this->server.sendall(client, (char*)&dataLength, sizeof(int));
+    this->server.sendall(client, data, dataLength);
 }
 
 void MasterNode::upload(std::string path)
@@ -77,7 +83,7 @@ void MasterNode::upload(std::string path)
     }
     this->clientsMutex.unlock();
 
-    int chunkSize = 2e5;
+    int chunkSize = 50000;
     std::vector<char> data = readFile(path);
     int amountTransferred = 0;
     while (amountTransferred < data.size())
@@ -85,10 +91,11 @@ void MasterNode::upload(std::string path)
         this->clientsMutex.lock();
         for (int client : this->clients)
         {
-            unsigned long currChunkSize = std::min(data.size(), (unsigned long)chunkSize);
+            unsigned long currChunkSize = std::min(data.size() - amountTransferred, (unsigned long)chunkSize);
             std::vector<char>::const_iterator first = data.begin() + amountTransferred;
             std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
             std::vector<char> currChunk = std::vector(first, last);
+            std::cout << "Data size: " << currChunk.size() << "\n";
             //this->server.send(client, currChunk.data(), currChunk.size());
             /*std::string filename;
             #ifdef __linux__
@@ -99,7 +106,7 @@ void MasterNode::upload(std::string path)
             std::string filename = ("C-" + std::to_string(this->chunkIndex++));
             uploadByProtocol(client, filename, &currChunk[0], currChunk.size());
 
-            amountTransferred += currChunkSize + 1; // To avoid duplicating the last byte
+            amountTransferred += currChunkSize;
             std::cout << amountTransferred << "\n";
             if (amountTransferred > data.size()) break;
         }

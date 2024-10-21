@@ -69,24 +69,54 @@ void Socket::send(char* data, size_t size)
 
 void Socket::send(int fd, char* data, size_t size)
 {
-    if (::send
-    (
-        fd, 
-        data, 
-        size, 
-        0
-    ) == -1) std::cout << "Failed to send. Error number: " << errno << "\n";
+    int res = ::send(fd, data, size, 0);
+    if (res == -1) std::cout << "Failed to send. Error number: " << errno << "\n";
+}
+
+void Socket::sendall(int fd, char* data, size_t size)
+{
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = size; // how many we have left to send
+    int n;
+
+    while(total < size) {
+        n = ::send(fd, data+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
+    }
+}
+
+void Socket::sendall(char* data, size_t size)
+{
+    int total = 0;        
+    int bytesleft = size; 
+    int n;
+
+    while(total < size) {
+        n = ::send(this->fileDesc, data+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
+    }
+}
+
+void Socket::recvall(int fd, char* buffer, size_t size)
+{
+    int res = ::recv(fd, buffer, size, MSG_WAITALL); 
+    if (res == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
+}
+
+void Socket::recvall(char* buffer, size_t size)
+{
+    int res = ::recv(this->fileDesc, buffer, size, MSG_WAITALL); 
+    if (res == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
 }
 
 void Socket::recv(char* buffer, size_t size)
 {
-    if (::recv
-    (
-        this->fileDesc, 
-        buffer, 
-        size,
-        0
-    ) == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
+    int res = ::recv(this->fileDesc, buffer, size, 0); 
+    if (res == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
 }
 
 void Socket::recv(int fd, char* buffer, size_t size)

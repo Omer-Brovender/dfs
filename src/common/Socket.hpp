@@ -30,8 +30,14 @@ public:
     void send(char* data, size_t size);
     void send(int fd, char* data, size_t size);
 
+    void sendall(char* data, size_t size);
+    void sendall(int fd, char* data, size_t size);
+
     void recv(char* buffer, size_t size);
     void recv(int fd, char* buffer, size_t size);
+
+    void recvall(char* buffer, size_t size);
+    void recvall(int fd, char* buffer, size_t size);
 
     void close();
 
