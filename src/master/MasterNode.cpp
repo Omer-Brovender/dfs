@@ -60,13 +60,6 @@ void MasterNode::uploadByProtocol(int client, std::string& filename, char* data,
 {
     int filenameLength = filename.length();
 
-    std::cout << filenameLength << "\n";
-    std::cout << "Data length: " << dataLength << "\n";
-    //std::cout << "Last elements: " << (data[128382] == (char)252 ? "passed" : "failed") << (data[128383] == (char)219 ? "passed" : "failed") << (data[128384] == 0 ? "passed" : "failed") << "\n";
-
-    for (int i = 0; i < dataLength; ++i)
-        if ((int)data[i] != i%16) std::cout << (int)data[i] << " " << i%16 << "\n";
-
     this->server.sendall(client, (char*)&filenameLength, sizeof(int));
     this->server.sendall(client, filename.data(), filenameLength);
     this->server.sendall(client, (char*)&dataLength, sizeof(int));
@@ -95,7 +88,6 @@ void MasterNode::upload(std::string path)
             std::vector<char>::const_iterator first = data.begin() + amountTransferred;
             std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
             std::vector<char> currChunk = std::vector(first, last);
-            std::cout << "Data size: " << currChunk.size() << "\n";
             //this->server.send(client, currChunk.data(), currChunk.size());
             /*std::string filename;
             #ifdef __linux__
@@ -107,7 +99,6 @@ void MasterNode::upload(std::string path)
             uploadByProtocol(client, filename, &currChunk[0], currChunk.size());
 
             amountTransferred += currChunkSize;
-            std::cout << amountTransferred << "\n";
             if (amountTransferred > data.size()) break;
         }
         this->clientsMutex.unlock();

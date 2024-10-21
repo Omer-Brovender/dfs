@@ -28,31 +28,25 @@ void ClientNode::handleServer()
 {
     while (true)
     {
-        int n;
-        unsigned int m = sizeof(n);
-        int fdsocket;
-        fdsocket = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP); // example
-        getsockopt(fdsocket,SOL_SOCKET,SO_RCVBUF,(void *)&n, &m);
-        // now the variable n will have the socket size
-        std::cout << n << " is the socket size \n";
-
         std::cout << "Listening...\n";
 
         int filenameLength;
         this->client.recvall((char*)&filenameLength, sizeof(int));
-        std::cout << "filenameLength: " << filenameLength << "\n";
+        
         std::vector<char> filename(filenameLength);
         this->client.recvall(&filename[0], filenameLength);
         std::string stringFilename(filename.cbegin(), filename.cend());
-        std::cout << "filename: " << stringFilename << "\n";
+        
         int dataLength;
         this->client.recvall((char*)&dataLength, sizeof(int));
-        std::cout << "dataLength: " << dataLength << "\n";
+        
         std::vector<char> data(dataLength);
         this->client.recvall(&data[0], dataLength);
+
+        std::cout << "filenameLength: " << filenameLength << "\n";
+        std::cout << "filename: " << stringFilename << "\n";
+        std::cout << "dataLength: " << dataLength << "\n";
         std::cout << "data...\n";
-        std::cout << "data size: " << data.size() << "\n";
-        //std::cout << "Last elements: " << (data[128382] == (char)252 ? "passed" : "failed") << (data[128383] == (char)219 ? "passed" : "failed") << (data[128384] == 0 ? "passed" : "failed") << "\n";
 
         writeFile(std::filesystem::path(this->saveDirectory) / std::filesystem::path(stringFilename), data);
     }
