@@ -12,8 +12,8 @@ int main()
     if (wsaerr)
         exit(1);
 #endif
-    MasterNode master;
-    
+    MasterNode master("...");
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
     master.upload("...");
     getchar();

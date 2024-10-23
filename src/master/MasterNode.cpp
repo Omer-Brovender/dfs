@@ -2,6 +2,7 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <istream>
 #include <iterator>
 #include <mutex>
 #include <string>
@@ -9,7 +10,8 @@
 #include <vector>
 #include "MasterNode.hpp"
 
-MasterNode::MasterNode()
+MasterNode::MasterNode(std::string saveDirectory)
+: saveDirectory(saveDirectory)
 {
     this->server = Socket();
     this->server.bind();
@@ -17,6 +19,9 @@ MasterNode::MasterNode()
 
     std::thread t1(&MasterNode::acceptClients, this);
     t1.detach();
+
+    std::ifstream saveFile(saveDirectory, std::ifstream::in);
+    saveFile >> this->save;
 
     this->chunkIndex = 0;
 }
@@ -46,6 +51,12 @@ std::vector<char> MasterNode::readFile(std::string path)
     data.resize(size);
 
     return data;
+}
+
+void MasterNode::writeSaveFile()
+{
+    std::ofstream saveFile(saveDirectory, std::ifstream::out);
+    saveFile << this->save;
 }
 
 std::vector<uint64_t> MasterNode::splitData(uint64_t dataSize, uint64_t chunkSize)
