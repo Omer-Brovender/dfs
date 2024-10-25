@@ -14,7 +14,12 @@ int main()
 #endif
     MasterNode master("...");
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    master.upload("...");
+    while (true)
+    {
+        std::string in;
+        std::cout << "Upload File: ";
+        std::cin >> in;
+        master.upload(in);
+    }
     getchar();
 }

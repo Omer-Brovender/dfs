@@ -16,7 +16,8 @@
 enum class PacketType
 {
     UPLOAD,
-    DOWNLOAD
+    DOWNLOAD,
+    EXIT
 };
 
 class Socket
@@ -44,6 +45,9 @@ public:
 
     void recvall(char* buffer, size_t size);
     void recvall(int fd, char* buffer, size_t size);
+
+    void uploadFile(int client, std::string& filename, char* data, int dataLength);
+    void downloadFile(std::string* outFilename, std::vector<char>* outData);
 
     void close();
 

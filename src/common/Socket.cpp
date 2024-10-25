@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstring>
 #include <errno.h>
+#include <vector>
 
 #ifdef __linux__
 #include <netinet/in.h>
@@ -130,6 +131,41 @@ void Socket::recv(int fd, char* buffer, size_t size)
     ) == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
 }
 
+void Socket::downloadFile(std::string* outFilename, std::vector<char>* outData)
+{
+    int filenameLength;
+    recvall((char*)&filenameLength, sizeof(int));
+    
+    std::vector<char> filename(filenameLength);
+    recvall(&filename[0], filenameLength);
+    std::string stringFilename(filename.cbegin(), filename.cend());
+    
+    int dataLength;
+    recvall((char*)&dataLength, sizeof(int));
+    
+    std::vector<char> data(dataLength);
+    recvall(&data[0], dataLength);
+
+    std::cout << "filenameLength: " << filenameLength << "\n";
+    std::cout << "filename: " << stringFilename << "\n";
+    std::cout << "dataLength: " << dataLength << "\n";
+    std::cout << "data...\n";
+
+    *outFilename = stringFilename;
+    *outData = data;
+}
+
+void Socket::uploadFile(int client, std::string& filename, char* data, int dataLength)
+{
+    int filenameLength = filename.length();
+    PacketType action = PacketType::UPLOAD;
+
+    sendall(client, (char*)&action, sizeof(PacketType));
+    sendall(client, (char*)&filenameLength, sizeof(int));
+    sendall(client, filename.data(), filenameLength);
+    sendall(client, (char*)&dataLength, sizeof(int));
+    sendall(client, data, dataLength);
+}
 void Socket::close()
 {
 #ifdef __linux__

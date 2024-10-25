@@ -41,6 +41,8 @@ MasterNode::MasterNode(std::string saveDirectory)
 
 MasterNode::~MasterNode()
 {
+    PacketType action = PacketType::EXIT;
+    this->server.send((char*)&action, sizeof(action));
     writeSaveFile();
     this->server.close();
 }
@@ -85,17 +87,7 @@ std::vector<uint64_t> MasterNode::splitData(uint64_t dataSize, uint64_t chunkSiz
     return ranges;
 }
 
-void MasterNode::uploadByProtocol(int client, std::string& filename, char* data, int dataLength)
-{
-    int filenameLength = filename.length();
-    PacketType action = PacketType::UPLOAD;
 
-    this->server.sendall(client, (char*)&action, sizeof(PacketType));
-    this->server.sendall(client, (char*)&filenameLength, sizeof(int));
-    this->server.sendall(client, filename.data(), filenameLength);
-    this->server.sendall(client, (char*)&dataLength, sizeof(int));
-    this->server.sendall(client, data, dataLength);
-}
 
 void MasterNode::upload(std::string path)
 {
@@ -136,7 +128,7 @@ void MasterNode::upload(std::string path)
             std::vector<char> currChunk = std::vector(first, last);
             
             std::string filename = ("I-" + std::to_string(this->fileIndex) + "-C-" + std::to_string(chunkIndex++));
-            uploadByProtocol(client, filename, &currChunk[0], currChunk.size());
+            this->server.uploadFile(client, filename, &currChunk[0], currChunk.size());
 
             amountTransferred += currChunkSize;
             if (amountTransferred > data.size()) break;

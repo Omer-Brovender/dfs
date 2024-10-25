@@ -27,24 +27,9 @@ void ClientNode::writeFile(std::string path, std::vector<char>& data)
 
 void ClientNode::handleUpload()
 {
-    int filenameLength;
-    this->client.recvall((char*)&filenameLength, sizeof(int));
-    
-    std::vector<char> filename(filenameLength);
-    this->client.recvall(&filename[0], filenameLength);
-    std::string stringFilename(filename.cbegin(), filename.cend());
-    
-    int dataLength;
-    this->client.recvall((char*)&dataLength, sizeof(int));
-    
-    std::vector<char> data(dataLength);
-    this->client.recvall(&data[0], dataLength);
-
-    std::cout << "filenameLength: " << filenameLength << "\n";
-    std::cout << "filename: " << stringFilename << "\n";
-    std::cout << "dataLength: " << dataLength << "\n";
-    std::cout << "data...\n";
-
+    std::string stringFilename;
+    std::vector<char> data;
+    this->client.downloadFile(&stringFilename, &data);
     writeFile(std::filesystem::path(this->saveDirectory) / std::filesystem::path(stringFilename), data);
 }
 
@@ -57,12 +42,17 @@ void ClientNode::handleServer()
         PacketType action;
         this->client.recvall((char*)&action, sizeof(PacketType));
 
-        if (action == PacketType::UPLOAD) 
+        switch(action)
         {
-            handleUpload();
-        } else {
-            std::cout << "Unknown packet type, cannot handle server request!\n";    
-        }    
+            case PacketType::UPLOAD:
+                handleUpload();
+                break;
+            case PacketType::EXIT:
+                exit(1);
+                break; // For consistency
+            default:
+                std::cout << "Unknown packet type, cannot handle server request!\n"; 
+        }  
     }
 }
 
