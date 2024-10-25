@@ -13,6 +13,12 @@
 #endif
 #include <string>
 
+enum class PacketType
+{
+    UPLOAD,
+    DOWNLOAD
+};
+
 class Socket
 {
 private:

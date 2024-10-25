@@ -16,7 +16,7 @@ private:
     Socket server;
     std::vector<int> clients;
     std::mutex clientsMutex;
-    int chunkIndex;
+    int fileIndex;
     json save;
 
     void acceptClients();
@@ -31,7 +31,6 @@ public:
     void upload(std::string path);
     MasterNode(std::string saveDirectory);
     ~MasterNode();
-
 };
 
 #endif

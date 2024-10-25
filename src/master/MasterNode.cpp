@@ -2,13 +2,14 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
-#include <istream>
 #include <iterator>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 #include "MasterNode.hpp"
+
+constexpr static char jsonDefaultData[] = "{ \"availableIndex\": 0, \"data\": [] }";
 
 MasterNode::MasterNode(std::string saveDirectory)
 : saveDirectory(saveDirectory)
@@ -20,14 +21,27 @@ MasterNode::MasterNode(std::string saveDirectory)
     std::thread t1(&MasterNode::acceptClients, this);
     t1.detach();
 
-    std::ifstream saveFile(saveDirectory, std::ifstream::in);
-    saveFile >> this->save;
+    std::filesystem::path saveFilePath(std::filesystem::path(saveDirectory) / "dfs.json");
 
-    this->chunkIndex = 0;
+    if (!std::filesystem::exists(saveFilePath))
+    {
+        std::fstream saveFileOut(saveFilePath, std::fstream::out); // Must only use 'out' to create file if doesn't exist
+        saveFileOut << jsonDefaultData;
+        saveFileOut.close();
+    }
+    
+    std::fstream saveFile(saveFilePath, std::fstream::in);
+    std::cout << std::filesystem::file_size(saveFilePath) << "\n";
+    saveFile >> this->save;
+    saveFile.close();
+
+    this->fileIndex = this->save["availableIndex"];
+    std::cout << this->fileIndex << " a\n";
 }
 
 MasterNode::~MasterNode()
 {
+    writeSaveFile();
     this->server.close();
 }
 
@@ -49,14 +63,18 @@ std::vector<char> MasterNode::readFile(std::string path)
     std::vector<char> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     const auto size = std::filesystem::file_size(path);
     data.resize(size);
+    file.close();
 
     return data;
 }
 
 void MasterNode::writeSaveFile()
 {
-    std::ofstream saveFile(saveDirectory, std::ifstream::out);
+    this->save["availableIndex"] = this->fileIndex;
+    std::filesystem::path saveFilePath(std::filesystem::path(this->saveDirectory) / "dfs.json");
+    std::ofstream saveFile(saveFilePath, std::ifstream::out);
     saveFile << this->save;
+    saveFile.close();
 }
 
 std::vector<uint64_t> MasterNode::splitData(uint64_t dataSize, uint64_t chunkSize)
@@ -70,7 +88,9 @@ std::vector<uint64_t> MasterNode::splitData(uint64_t dataSize, uint64_t chunkSiz
 void MasterNode::uploadByProtocol(int client, std::string& filename, char* data, int dataLength)
 {
     int filenameLength = filename.length();
+    PacketType action = PacketType::UPLOAD;
 
+    this->server.sendall(client, (char*)&action, sizeof(PacketType));
     this->server.sendall(client, (char*)&filenameLength, sizeof(int));
     this->server.sendall(client, filename.data(), filenameLength);
     this->server.sendall(client, (char*)&dataLength, sizeof(int));
@@ -87,26 +107,35 @@ void MasterNode::upload(std::string path)
     }
     this->clientsMutex.unlock();
 
+    std::string filename;
+    #ifdef __linux__
+        filename = path.substr(path.find_last_of('/')+1);
+    #elif _WIN32
+        filename = path.substr(path.find_last_of('\\')+1);
+    #endif
+
     int chunkSize = 50000;
     std::vector<char> data = readFile(path);
     int amountTransferred = 0;
+
+    json file = json::object();
+    file["fileIndex"] = this->fileIndex;
+    file["filename"] = filename;
+    int chunks = 0;
+    int chunkIndex = 0;
     while (amountTransferred < data.size())
     {
         this->clientsMutex.lock();
         for (int client : this->clients)
         {
+            chunks++;
+
             unsigned long currChunkSize = std::min(data.size() - amountTransferred, (unsigned long)chunkSize);
             std::vector<char>::const_iterator first = data.begin() + amountTransferred;
             std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
             std::vector<char> currChunk = std::vector(first, last);
-            //this->server.send(client, currChunk.data(), currChunk.size());
-            /*std::string filename;
-            #ifdef __linux__
-                filename = path.substr(path.find_last_of('/')+1);
-            #elif _WIN32
-                filename = path.substr(path.find_last_of('\\')+1);
-            #endif*/
-            std::string filename = ("C-" + std::to_string(this->chunkIndex++));
+            
+            std::string filename = ("I-" + std::to_string(this->fileIndex) + "-C-" + std::to_string(chunkIndex++));
             uploadByProtocol(client, filename, &currChunk[0], currChunk.size());
 
             amountTransferred += currChunkSize;
@@ -114,4 +143,8 @@ void MasterNode::upload(std::string path)
         }
         this->clientsMutex.unlock();
     }
+    this->fileIndex++;
+    file["chunks"] = chunks;
+    this->save["data"].push_back(file);
+    writeSaveFile();
 }
