@@ -23,12 +23,12 @@ private:
     std::vector<char> readFile(std::string path);
     void writeSaveFile();
     void uploadByProtocol(int client, std::string& filename, char* data, int dataLength);
-    std::vector<uint64_t> splitData(uint64_t dataSize, uint64_t chunkSize);
 
 public:
     std::string saveDirectory;
 
     void upload(std::string path);
+    std::vector<int> getFiles(std::string query);
     MasterNode(std::string saveDirectory);
     ~MasterNode();
 };
