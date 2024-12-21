@@ -114,7 +114,7 @@ void MasterNode::upload(std::string path)
         {
             chunks++;
 
-            unsigned long currChunkSize = (std::min)(data.size() - amountTransferred, (unsigned long)chunkSize);
+            unsigned long currChunkSize = (std::min)((unsigned long)(data.size() - amountTransferred), (unsigned long)chunkSize);
             std::vector<char>::const_iterator first = data.begin() + amountTransferred;
             std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
             std::vector<char> currChunk = std::vector(first, last);
