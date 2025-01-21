@@ -14,6 +14,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_link_libraries(common ws2_32)
 endif()
 
+add_subdirectory(include/Crow)
+target_link_libraries(common PUBLIC Crow)
+
 add_executable(master
     src/master/main.cpp
     src/master/MasterNode.cpp
