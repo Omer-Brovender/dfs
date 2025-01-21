@@ -1,7 +1,6 @@
 [submodule "json"]
 	path = include/jsonlib
 	url = https://github.com/nlohmann/json.git
-
-[submodule "crow"]
-	path = include/crow
+[submodule "include/Crow"]
+	path = include/Crow
 	url = https://github.com/CrowCpp/Crow.git
