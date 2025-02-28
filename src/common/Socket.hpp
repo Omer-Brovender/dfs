@@ -50,7 +50,7 @@ public:
     void downloadFile(std::string* outFilename, std::vector<char>* outData);
 
     void close();
-
+    ~Socket();
 };
 
 #endif

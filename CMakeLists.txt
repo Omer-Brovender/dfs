@@ -20,6 +20,7 @@ target_link_libraries(common PUBLIC Crow)
 add_executable(master
     src/master/main.cpp
     src/master/MasterNode.cpp
+    src/master/WebServer.cpp
 )
 
 target_include_directories(master PUBLIC ${PROJECT_SOURCE_DIR}/include)

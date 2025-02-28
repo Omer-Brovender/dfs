@@ -4,6 +4,7 @@
 #include <thread>
 #include "../common/Socket.hpp"
 #include "MasterNode.hpp"
+#include "WebServer.hpp"
 
 int main()
 {
@@ -13,7 +14,13 @@ int main()
     if (wsaerr)
         exit(1);
 #endif
-    MasterNode master("...");
+    //MasterNode master("");
+    WebServer server("");
+    std::thread t([] (WebServer& server) 
+    {
+        server.start(8080);
+    }, std::ref(server));
+
 
     while (true)
     {
@@ -26,7 +33,12 @@ int main()
         //{
         std::cout << "Upload File: ";
         std::cin >> in;
-        master.upload(in);
+        if (in == "q") 
+        {
+            server.stop();
+            break;
+        };
+        /////////master.upload(in);
         //}
             /*else if (std::tolower(in[0] == 'd'))
             {
@@ -36,5 +48,5 @@ int main()
             }
         }*/
     }
-    getchar();
+    return 0;
 }

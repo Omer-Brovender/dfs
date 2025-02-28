@@ -2,3 +2,4 @@ build/
 /.vs
 compile_commands.json
 .cache/
+.vscode

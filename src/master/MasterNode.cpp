@@ -49,7 +49,7 @@ MasterNode::~MasterNode()
 
 void MasterNode::acceptClients()
 {
-    while (true)
+    while (1)
     {
         std::cout << "Listening for clients...\n";
         int client = this->server.accept();
@@ -78,8 +78,6 @@ void MasterNode::writeSaveFile()
     saveFile << this->save;
     saveFile.close();
 }
-
-
 
 void MasterNode::upload(std::string path)
 {

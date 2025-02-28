@@ -166,6 +166,7 @@ void Socket::uploadFile(int client, std::string& filename, char* data, int dataL
     sendall(client, (char*)&dataLength, sizeof(int));
     sendall(client, data, dataLength);
 }
+
 void Socket::close()
 {
 #ifdef __linux__
@@ -173,4 +174,9 @@ void Socket::close()
 #elif _WIN32
     ::closesocket(this->fileDesc);
 #endif
+}
+
+Socket::~Socket()
+{
+    close();
 }
