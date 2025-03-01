@@ -15,10 +15,10 @@ int main()
         exit(1);
 #endif
     //MasterNode master("");
-    WebServer server("");
+    WebServer server("", "");
     std::thread t([] (WebServer& server) 
     {
-        server.start(8080);
+        server.start(8081);
     }, std::ref(server));
 
 

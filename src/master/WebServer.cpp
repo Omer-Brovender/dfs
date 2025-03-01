@@ -1,11 +1,13 @@
 #include "WebServer.hpp"
+#include "Database.hpp"
 #include "crow/app.h"
 #include "crow/http_request.h"
 #include "crow/http_response.h"
 #include "crow/json.h"
 #include "crow/mustache.h"
 
-WebServer::WebServer(std::string webRoot)
+WebServer::WebServer(std::string webRoot, std::string dbPath)
+: db(dbPath.c_str())
 {
     crow::mustache::set_global_base(webRoot);
     setupRoutes();
@@ -20,6 +22,7 @@ void WebServer::start(std::uint16_t port)
 
 void WebServer::stop()
 {
+    this->db.close();
     this->app.stop();
 }
 
@@ -37,13 +40,38 @@ crow::response WebServer::loginPage()
 
 crow::response WebServer::login(const crow::request& req)
 {
-    std::cout << req.body << "\n";
+    auto data = crow::json::load(req.body);
+    if (!data || !(data.has("email") && data.has("password")))
+        return crow::response(400);
+
+    if (db.validateUser(std::string(data["email"]), std::string(data["password"]))) // TODO: Hash password first
+    {
+        // Successful log in
+        std::cout << "Logged in\n";
+    }
+
     return crow::response(200);
 }
 
 crow::response WebServer::signup(const crow::request& req)
 {
-    std::cout << req.body << "\n";
+    auto data = crow::json::load(req.body);
+    if (!data || !(data.has("username") && data.has("email") && data.has("password")))
+        return crow::response(400);
+    
+    struct User user
+    {
+        std::string(data["username"]),
+        std::string(data["email"]),
+        std::string(data["password"]),
+    };
+
+    if (db.registerUser(user)) // TODO: Hash password first
+    {
+        // Successful registration
+        std::cout << "Registered\n";
+    }
+
     return crow::response(200);
 }
 
