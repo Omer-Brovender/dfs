@@ -3,6 +3,7 @@
 
 #include "Database.hpp"
 #include "crow/app.h"
+#include "crow/middlewares/cookie_parser.h"
 #include "crow/http_request.h"
 #include "crow/http_response.h"
 
@@ -17,10 +18,10 @@ public:
 private:
     Database db;
 
-    crow::SimpleApp app;
+    crow::App<crow::CookieParser> app;
     std::string webRoot;
-    crow::response rootPage();
-    crow::response loginPage();
+    crow::response rootPage(const crow::request& req);
+    crow::response loginPage(const crow::request& req);
     crow::response login(const crow::request& req);
     crow::response signup(const crow::request& req);
 

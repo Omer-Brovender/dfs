@@ -19,8 +19,8 @@ showLogin.addEventListener("click", (e) => {
 
 signupForm.addEventListener('submit', async function (e) {
     e.preventDefault();
-    const formData = new FormData(signupForm)
-    console.log(formData.values())
+    const formData = new FormData(signupForm);
+    console.log(formData.values());
     const response = await fetch("/api/signup", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -28,13 +28,13 @@ signupForm.addEventListener('submit', async function (e) {
     });
 
     const result = await response.json();
-    console.log(result)
+    console.log(result);
 });
 
 loginForm.addEventListener('submit', async function (e) {
     e.preventDefault();
-    const formData = new FormData(loginForm)
-    console.log(formData.values())
+    const formData = new FormData(loginForm);
+    console.log(formData.values());
     const response = await fetch("/api/login", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -42,5 +42,13 @@ loginForm.addEventListener('submit', async function (e) {
     });
 
     const result = await response.json();
-    console.log(result)
+    console.log(result);
+    
+    if (response.ok && result.success) {
+        console.log("sessionID=" + result.session + "; HttpOnly; SameSite=Strict");
+        document.cookie = "sessionID=" + result.session + "; SameSite=Strict";
+        location.reload();
+    } else {
+        console.error("Login failed");
+    }
 });

@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(DistributedFileSystem)
-find_package(SQLite3 REQUIRED)
-set(CMAKE_BUILD_TYPE Debug)
 
+find_package(OpenSSL REQUIRED) 
+find_package(SQLite3 REQUIRED)
+
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(common
@@ -10,6 +12,7 @@ add_library(common
 )
 
 target_include_directories(common PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(common PUBLIC OpenSSL::SSL OpenSSL::Crypto) 
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_link_libraries(common ws2_32)
@@ -26,7 +29,7 @@ add_executable(master
 )
 
 target_include_directories(master PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(master PRIVATE SQLite::SQLite3 common)
+target_link_libraries(master PRIVATE SQLite::SQLite3 common OpenSSL::SSL OpenSSL::Crypto) 
 
 add_executable(client
     src/client/main.cpp
@@ -34,4 +37,4 @@ add_executable(client
 )
 
 target_include_directories(client PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(client common)
+target_link_libraries(client common OpenSSL::SSL OpenSSL::Crypto) 
