@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstring>
 #include <vector>
+#include <filesystem>
 #ifdef __linux__
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -22,17 +23,16 @@ enum class PacketType
 
 class Socket
 {
-private:
-    int fileDesc;
-    std::vector<int> clientFileDesc;
-    struct sockaddr_in serverAddress;
-
 public:
     Socket();
+
+    static std::string IPToString(struct sockaddr_storage& addr, socklen_t& len);
+
     void connect(std::string IP);
     void bind();
     void listen(int maxListeners);
     int accept();
+    int accept(struct sockaddr* addr, socklen_t *len);
     
     void send(char* data, size_t size);
     void send(int fd, char* data, size_t size);
@@ -46,11 +46,17 @@ public:
     void recvall(char* buffer, size_t size);
     void recvall(int fd, char* buffer, size_t size);
 
-    void uploadFile(int client, std::string& filename, char* data, int dataLength);
-    void downloadFile(std::string* outFilename, std::vector<char>* outData);
+    void uploadFile(std::filesystem::path dir);
+    void initiateUploadFile(int target, std::string& filename, char* data, int dataLength);
+    void downloadFile(int optionalTarget, std::string* outFilename, std::vector<char>* outData, bool initiating);
 
     void close();
     ~Socket();
+
+private:
+    int fileDesc;
+    std::vector<int> clientFileDesc;
+    struct sockaddr_in serverAddress;
 };
 
 #endif

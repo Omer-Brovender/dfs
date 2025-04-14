@@ -1,6 +1,7 @@
 #include <cctype>
 #include <chrono>
 #include <iostream>
+#include <memory>
 #include <thread>
 #include "../common/Socket.hpp"
 #include "MasterNode.hpp"
@@ -14,8 +15,9 @@ int main()
     if (wsaerr)
         exit(1);
 #endif
-    //MasterNode master("");
+    std::shared_ptr<MasterNode> master = std::make_shared<MasterNode>("");
     WebServer server("", "");
+    server.setMasterNode(master);
     std::thread t([] (WebServer& server) 
     {
         server.start(8080);
@@ -25,28 +27,30 @@ int main()
     while (true)
     {
         std::string in;
-        //std::cout << "Upload/Download (U/D): ";
-        //std::cin >> in;
-        /*if (in.length() > 0)
-        {*/
-        //if (std::tolower(in[0]) == 'u')
-        //{
-        std::cout << "Upload File: ";
+        std::cout << "Press q to quit: ";
         std::cin >> in;
-        if (in == "q") 
+        if (in.length() > 0)
         {
-            server.stop();
-            break;
-        };
-        /////////master.upload(in);
-        //}
-            /*else if (std::tolower(in[0] == 'd'))
+            if (in == "q") 
+            {
+                server.stop();
+                break;
+            };
+
+            /*if (std::tolower(in[0]) == 'u')
+            {
+                std::cout << "Upload File: ";
+                std::cin >> in;
+
+                master->upload(in);
+            }
+            else if (std::tolower(in[0] == 'd'))
             {
                 std::cout << "Enter filename (example.txt): ";
                 std::cin >> in;
-                master
-            }
-        }*/
+                //master
+            }*/
+        }
     }
     return 0;
 }

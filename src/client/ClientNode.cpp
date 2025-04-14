@@ -8,7 +8,6 @@
 
 ClientNode::ClientNode(std::string serverIP)
 {
-    this->client = Socket();
     this->client.connect(serverIP);
 
     std::thread t1(&ClientNode::handleServer, this);
@@ -17,8 +16,7 @@ ClientNode::ClientNode(std::string serverIP)
 
 void ClientNode::writeFile(std::string path, std::vector<char>& data)
 {
-    long msSinceUnixEpoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::ofstream file( std::filesystem::path((path + "-" + std::to_string(msSinceUnixEpoch)).c_str()), std::ofstream::out | std::ofstream::trunc | std::ofstream::binary );
+    std::ofstream file( std::filesystem::path(path), std::ofstream::out | std::ofstream::trunc | std::ofstream::binary );
     for (const auto& byte : data)
         file << byte;
     file.close();
@@ -28,8 +26,13 @@ void ClientNode::handleUpload()
 {
     std::string stringFilename;
     std::vector<char> data;
-    this->client.downloadFile(&stringFilename, &data);
+    this->client.downloadFile((int)NULL, &stringFilename, &data, false);
     writeFile(std::filesystem::path(this->saveDirectory) / std::filesystem::path(stringFilename), data);
+}
+
+void ClientNode::handleDownload()
+{
+    this->client.uploadFile(this->saveDirectory);
 }
 
 void ClientNode::handleServer()
@@ -46,7 +49,11 @@ void ClientNode::handleServer()
             case PacketType::UPLOAD:
                 handleUpload();
                 break;
+            case PacketType::DOWNLOAD:
+                handleDownload();
+                break;
             case PacketType::EXIT:
+                this->client.close();
                 exit(1);
                 break; // For consistency
             default:

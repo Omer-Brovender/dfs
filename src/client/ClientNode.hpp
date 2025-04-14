@@ -9,6 +9,7 @@ private:
     Socket client;
     void writeFile(std::string path, std::vector<char>& data);
     void handleServer();
+    void handleDownload();
     void handleUpload();
     
 public:

@@ -154,5 +154,37 @@ body {
 .file .name {
     font-size: 1em;
     font-weight: 500;
+    word-wrap: break-word;
     color: #333;
+}
+
+.file-context {
+    position: absolute;
+    width: 100px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    border-radius: 5px;
+    z-index: 1000;
+    padding: 0.5em;
+}
+
+.download-button {
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    padding: 0.5em 0.8em;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 0.9em;
+}
+
+.download-button:hover {
+    background-color: #3367d6;
+}
+
+
+.inactive {
+    display: none;
 }

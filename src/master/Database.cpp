@@ -5,11 +5,12 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <unordered_map>
 
 constexpr int randMin = 1e6;
 constexpr int randMax = 1e7 - 1;
 
-std::string sha256(const std::string &s)
+std::string sha256(const std::string& s)
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -29,11 +30,11 @@ Database::Database(const char* filename)
     int exitc = sqlite3_open(filename, &this->db);
 
     std::string sql = "CREATE TABLE IF NOT EXISTS users("
-                        "id         INT   PRIMARY KEY,                      "
-                        "username   TEXT                NOT NULL   UNIQUE,  "
-                        "passhash   TEXT                NOT NULL,           "
-                        "email      TEXT                NOT NULL   UNIQUE,  "
-                        "session    TEXT                           UNIQUE   "
+                        "id         INTEGER   PRIMARY KEY   AUTOINCREMENT,           "
+                        "username   TEXT                    NOT NULL        UNIQUE,  "
+                        "passhash   TEXT                    NOT NULL,                "
+                        "email      TEXT                    NOT NULL        UNIQUE,  "
+                        "session    TEXT                                    UNIQUE   "
                         ");";
 
     std::string failMessage = "Couldn't create table!";
@@ -44,12 +45,24 @@ Database::Database(const char* filename)
         failMessage,
         sccMessage
     );
+
+    sql = "CREATE TABLE IF NOT EXISTS files("
+                    "id         INTEGER   PRIMARY KEY   AUTOINCREMENT,   "
+                    "ownerid    INT                     NOT NULL,        "
+                    "name       TEXT                    NOT NULL         "
+                    ");";
+    
+    execQuery(
+        sql,
+        failMessage,
+        sccMessage
+    );
 };
 
 bool Database::rowExists(std::string& sql)
 {
     struct sqlite3_stmt *selectstmt;
-    int result = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
+    int result = sqlite3_prepare_v2(this->db, sql.c_str(), -1, &selectstmt, NULL);
     
     bool found = false;
     if (result == SQLITE_OK)
@@ -74,6 +87,40 @@ bool Database::execQuery(std::string& sql, std::string& failMessage, std::string
     } 
     std::cout << sccMessage << "\n"; 
     return true;
+}
+
+User Database::getUser(std::string sessionID)
+{
+    std::string sql = "SELECT * FROM users"
+                    " WHERE session='" + sessionID
+                    + "';";
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(this->db, sql.c_str(), -1, &selectstmt, NULL);
+    User ret;
+
+    if (result != SQLITE_OK)
+    {
+        std::cerr << "Failed to find user. (Err: " << sqlite3_errmsg(db) << ")\n";
+        ret = User();
+    }
+    
+    if (sqlite3_step(selectstmt) == SQLITE_ROW) 
+    {
+        int id = sqlite3_column_int(selectstmt, 0);
+        auto username = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 1)));
+        auto passhash = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 2)));
+        auto email    = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 3)));
+
+        ret = User{username, email, passhash, id};
+    } 
+    else 
+    {
+        std::cout << "No row found for sessionID: " << sessionID << "\n";
+    }
+
+    sqlite3_finalize(selectstmt);
+    return ret;
 }
 
 bool Database::registerUser(struct User user)
@@ -103,6 +150,55 @@ bool Database::validateUser(std::string email, std::string passHash)
                         + "';";
 
     return rowExists(sql);
+}
+
+int Database::registerFileUpload(int ownerID, std::string filename)
+{
+    std::string sql = "INSERT INTO files (ownerid, name)"
+                        " VALUES ('" 
+                        + std::to_string(ownerID) + "', '" 
+                        + filename
+                        + "');";
+
+    std::string failMessage = "Failed to register user.";
+    std::string sccMessage = "User successfuly registered.";
+
+    execQuery(
+        sql,
+        failMessage,
+        sccMessage
+    );
+
+    int id = sqlite3_last_insert_rowid(this->db);
+    return id;
+}
+
+std::unordered_map<int, std::string> Database::getFiles(int ownerID)
+{
+    std::string sql = "SELECT * FROM files"
+                    " WHERE ownerid='" + std::to_string(ownerID)
+                    + "';";
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(this->db, sql.c_str(), -1, &selectstmt, NULL);
+    std::unordered_map<int, std::string> files;
+
+    if (result != SQLITE_OK)
+    {
+        std::cerr << "Failed to obtain user files. (Err: " << sqlite3_errmsg(db) << ")\n";
+    }
+    
+    while (sqlite3_step(selectstmt) == SQLITE_ROW) 
+    {
+        int id = sqlite3_column_int(selectstmt, 0);
+        ownerID = sqlite3_column_int(selectstmt, 1);
+        auto filename = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 2)));
+
+        files[id] = filename;
+    }
+
+    sqlite3_finalize(selectstmt);
+    return files;
 }
 
 std::string Database::generateSession(std::string email)

@@ -13,6 +13,6 @@ int main()
 #endif
 
     ClientNode client("127.0.0.1");
-    client.saveDirectory = "...";
+    client.saveDirectory = "";
     getchar();
 }

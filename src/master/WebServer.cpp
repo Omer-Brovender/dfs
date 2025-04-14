@@ -1,17 +1,29 @@
 #include "WebServer.hpp"
 #include "Database.hpp"
 #include "crow/app.h"
+#include "crow/ci_map.h"
 #include "crow/http_request.h"
 #include "crow/http_response.h"
 #include "crow/json.h"
 #include "crow/middlewares/cookie_parser.h"
 #include "crow/mustache.h"
+#include "crow/multipart.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <iostream>
+#include <vector>
 
 WebServer::WebServer(std::string webRoot, std::string dbPath)
 : db(dbPath.c_str())
 {
     crow::mustache::set_global_base(webRoot);
     setupRoutes();
+}
+
+void WebServer::setMasterNode(std::shared_ptr<MasterNode> master)
+{
+    this->master = master;
 }
 
 void WebServer::start(std::uint16_t port)
@@ -33,8 +45,11 @@ crow::response WebServer::rootPage(const crow::request& req)
     auto session = ctx.get_cookie("sessionID");
 
     if (db.validateSession(session))
+    {
+        auto user = this->db.getUser(session);
+        std::cout << "Username: " << user.username << "\n";
         return crow::mustache::load("templates/index.html").render();
-
+    }
     crow::response res;
     res.redirect("/login");
     return res;
@@ -92,6 +107,96 @@ crow::response WebServer::signup(const crow::request& req)
     return crow::response(200);
 }
 
+crow::response WebServer::upload(const crow::request& req)
+{
+    auto& ctx = this->app.get_context<crow::CookieParser>(req);
+    auto session = ctx.get_cookie("sessionID");
+
+    if (!db.validateSession(session))
+        return crow::response(401);
+
+    int ownerID = this->db.getUser(session).ID;
+
+    crow::multipart::message message(req);
+
+    auto data = message.part_map;
+    if (data.size() != 1 || data.find("file") == data.end()) return crow::response(400); // Malformed request - no file/too many files
+    std::string filename = "";
+    try
+    {
+        filename = data.find("file")->second
+                    .headers.find("Content-Disposition")->second
+                    .params.find("filename")->second;
+    }
+    catch (int) 
+    {
+        return crow::response(400);
+    }
+
+    std::string fileData = data.find("file")->second.body;
+    int id = db.registerFileUpload(ownerID, filename);
+    std::vector<char> dataVector(fileData.cbegin(), fileData.cend());
+    this->master->upload(dataVector, id);
+
+    return crow::response(200);
+}
+
+crow::response WebServer::download(const crow::request& req, int id)
+{
+    auto& ctx = this->app.get_context<crow::CookieParser>(req);
+    auto session = ctx.get_cookie("sessionID");
+
+    if (!db.validateSession(session))
+        return crow::response(401);
+
+    int ownerID = this->db.getUser(session).ID;
+    std::unordered_map<int, std::string> files = this->db.getFiles(ownerID);
+    if (files.find(id) == files.end())
+        return crow::response(401);
+
+    std::vector<char> fileData = this->master->downloadFile(id);
+    std::cout << "Size: " << fileData.size() << "\n";
+
+    crow::response res;
+    res.set_header("Content-Type", "text/plain; boundary=<boundary>");
+    res.write("--<boundary>\n");
+    res.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + files.find(id)->second + "\"\n");
+    res.write("Content-Type: application/octet-stream\n");
+    res.write(fileData.data());
+    res.write("\n--<boundary>--");
+    /*crow::multipart::header header;
+    std::vector<crow::multipart::part> parts;
+    crow::multipart::part part;
+    part.body = std::string(fileData.data());
+    part.headers.insert({{"content-disposition"}, {"mime/type; name=\"file\"; filename=" + files.find(id)->second}});
+    parts.push_back(part);
+    crow::ci_map map;
+
+    return crow::multipart::message(map, "boundary", parts);*/
+    return res;
+}
+
+crow::response WebServer::files(const crow::request& req)
+{
+    auto& ctx = this->app.get_context<crow::CookieParser>(req);
+    auto session = ctx.get_cookie("sessionID");
+
+    if (!db.validateSession(session))
+        return crow::response(401);
+
+    int ownerID = this->db.getUser(session).ID;
+    std::unordered_map<int, std::string> files = this->db.getFiles(ownerID);
+    crow::json::wvalue ret;
+
+    for (auto& [id, filename] : files)
+    {
+        std::cout << id << ": " << filename << "\n";
+        ret[std::to_string(id)] = filename;
+    }
+
+    return ret;
+}
+
 void WebServer::setupRoutes()
 {
     CROW_ROUTE(this->app, "/")
@@ -122,6 +227,33 @@ void WebServer::setupRoutes()
             [this](const crow::request& req)
             {
                 return signup(req);
+            }
+        );
+    
+    CROW_ROUTE(this->app, "/api/upload")
+        .methods("POST"_method)
+        (
+            [this](const crow::request& req)
+            {
+                return upload(req);
+            }
+        );
+    
+    CROW_ROUTE(this->app, "/api/files")
+        .methods("GET"_method)
+        (
+            [this](const crow::request& req)
+            {
+                return files(req);
+            }
+        );
+
+    CROW_ROUTE(this->app, "/api/download/<int>")
+        .methods("GET"_method)
+        (
+            [this](const crow::request& req, int id)
+            {
+                return download(req, id);
             }
         );
 }

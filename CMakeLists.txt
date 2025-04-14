@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_library(common
     src/common/Socket.cpp
+    src/common/FileUtils.cpp
 )
 
 target_include_directories(common PUBLIC ${PROJECT_SOURCE_DIR}/include)

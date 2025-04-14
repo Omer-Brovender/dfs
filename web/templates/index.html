@@ -18,7 +18,10 @@
       </div>
       <div class="main-area">
         <div class="sidebar">
-          <button class="upload-button">Upload</button>
+          <form id="file-form" action="/api/upload" method="POST" enctype="multipart/form-data">
+            <input id="upload-input" type="file" hidden/>
+            <button class="upload-button">Upload</button>
+          </form>
           <nav class="navbar">
             <a href="#">Home</a>
             <a href="#">Shared</a>
@@ -26,122 +29,11 @@
           </nav>
         </div>
         <div class="file-grid">
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📁</p>
-            </div>
-            <p class="name">Folder 1</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📁</p>
-            </div>
-            <p class="name">Folder 2</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📄</p>
-            </div>
-            <p class="name">Document</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
-          <div class="file">
-            <div class="icon-background">
-              <p class="icon">📊</p>
-            </div>
-            <p class="name">Spreadsheet</p>
-          </div>
+        <div class="file-context inactive">
+          <button class="download-button">Download</button>
         </div>
       </div>
     </div>
+    <script src="/static/home.js"></script>
   </body>
 </html>

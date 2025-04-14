@@ -5,16 +5,17 @@
 #include <iterator>
 #include <mutex>
 #include <string>
+#include <sys/socket.h>
 #include <thread>
 #include <vector>
+#include "../common/Socket.hpp"
 #include "MasterNode.hpp"
 
-constexpr static char jsonDefaultData[] = "{ \"availableIndex\": 0, \"data\": [] }";
+constexpr static char jsonDefaultData[] = "{ \"data\": {} }";
 
 MasterNode::MasterNode(std::string saveDirectory)
 : saveDirectory(saveDirectory)
 {
-    this->server = Socket();
     this->server.bind();
     this->server.listen(5);
 
@@ -34,15 +35,19 @@ MasterNode::MasterNode(std::string saveDirectory)
     std::cout << std::filesystem::file_size(saveFilePath) << "\n";
     saveFile >> this->save;
     saveFile.close();
-
-    this->fileIndex = this->save["availableIndex"];
-    std::cout << this->fileIndex << " a\n";
 }
 
 MasterNode::~MasterNode()
 {
-    PacketType action = PacketType::EXIT;
-    this->server.send((char*)&action, sizeof(action));
+    std::cout << "Exiting\n";
+    this->clientsMutex.lock();
+    for (auto& [ip, client] : this->clients)
+    {
+        PacketType action = PacketType::EXIT;
+        this->server.send(client, (char*)&action, sizeof(action));
+    }
+    this->clientsMutex.unlock();
+
     writeSaveFile();
     this->server.close();
 }
@@ -51,35 +56,111 @@ void MasterNode::acceptClients()
 {
     while (1)
     {
-        std::cout << "Listening for clients...\n";
-        int client = this->server.accept();
+        //std::cout << "Listening for clients...\n";
+        struct sockaddr_storage addr;
+        socklen_t len = sizeof(addr);
+        int client = this->server.accept((sockaddr*)&addr, &len);
+        std::string ip = Socket::IPToString(addr, len);
+        std::cout << "IP: " << ip << "\n";
+        if (client == -1) continue;
+        
+        std::cout << "Accepted! client: " << client << "\n";
         this->clientsMutex.lock();
-        this->clients.push_back(client);
+        this->clients[ip] = client;
         this->clientsMutex.unlock();
     }
 }
 
-std::vector<char> MasterNode::readFile(std::string path)
+std::vector<char> MasterNode::downloadFile(int fileIndex)
 {
-    std::ifstream file( std::filesystem::path(path.c_str()), std::ifstream::in | std::ifstream::binary );
-    std::vector<char> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    const auto size = std::filesystem::file_size(path);
-    data.resize(size);
-    file.close();
+    std::vector<char> fileData;
+    int chunks = this->save["data"][std::to_string(fileIndex)]["chunks"];
+    std::vector<std::string> hosts = this->save["data"][std::to_string(fileIndex)]["hosts"];
 
-    return data;
+    for (int i = 0; i < chunks; ++i)
+    {
+        std::string ip = hosts[i];
+        std::vector<char> chunkData = download(ip, fileIndex, i);
+        fileData.insert(fileData.cend(), chunkData.cbegin(), chunkData.cend());
+    }
+
+    return fileData;
+}
+
+std::vector<char> MasterNode::download(std::string& ip, int fileIndex, int chunkIndex)
+{
+    std::vector<char> fileData;
+
+    this->clientsMutex.lock();
+    auto clientIter = this->clients.find(ip);
+    if (clientIter == this->clients.end())
+    {
+        std::cout << "Couldn't download FileI " << fileIndex << " ChunkI " << chunkIndex << " from " << ip << "!";
+        this->clientsMutex.unlock();
+        return fileData;
+    }
+    this->clientsMutex.unlock();
+
+    int client = clientIter->second;
+    std::string filename = "I-" + std::to_string(fileIndex) + "-C-" + std::to_string(chunkIndex);
+    this->server.downloadFile(client, &filename, &fileData, true);
+
+    return fileData;
 }
 
 void MasterNode::writeSaveFile()
 {
-    this->save["availableIndex"] = this->fileIndex;
     std::filesystem::path saveFilePath(std::filesystem::path(this->saveDirectory) / "dfs.json");
     std::ofstream saveFile(saveFilePath, std::ifstream::out);
     saveFile << this->save;
     saveFile.close();
 }
 
-void MasterNode::upload(std::string path)
+void MasterNode::upload(std::vector<char>& data, int id)
+{
+    this->clientsMutex.lock();
+    if (this->clients.size() == 0)
+    {
+        std::cout << "No clients are connected, cannot upload file!\n";
+        return;
+    }
+    this->clientsMutex.unlock();
+
+    int chunkSize = 50000;
+    int amountTransferred = 0;
+
+    json file = json::object();
+    json chunkInfo = json::array();
+    int chunks = 0;
+    int chunkIndex = 0;
+    while (amountTransferred < data.size())
+    {
+        this->clientsMutex.lock();
+        for (auto [ip, client] : this->clients)
+        {
+            chunks++;
+
+            unsigned long currChunkSize = (std::min)((unsigned long)(data.size() - amountTransferred), (unsigned long)chunkSize);
+            std::vector<char>::const_iterator first = data.begin() + amountTransferred;
+            std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
+            std::vector<char> currChunk = std::vector(first, last);
+            
+            std::string filename = ("I-" + std::to_string(id) + "-C-" + std::to_string(chunkIndex++));
+            this->server.initiateUploadFile(client, filename, &currChunk[0], currChunk.size());
+            chunkInfo.push_back(std::string(ip));
+
+            amountTransferred += currChunkSize;
+            if (amountTransferred > data.size()) break;
+        }
+        this->clientsMutex.unlock();
+    }
+    file["chunks"] = chunks;
+    file["hosts"] = chunkInfo;
+    this->save["data"][std::to_string(id)] = file;
+    writeSaveFile();
+}
+
+/*void MasterNode::upload(std::string path)
 {
     this->clientsMutex.lock();
     if (this->clients.size() == 0)
@@ -96,37 +177,6 @@ void MasterNode::upload(std::string path)
         filename = path.substr(path.find_last_of('\\')+1);
     #endif
 
-    int chunkSize = 50000;
     std::vector<char> data = readFile(path);
-    int amountTransferred = 0;
-
-    json file = json::object();
-    file["fileIndex"] = this->fileIndex;
-    file["filename"] = filename;
-    int chunks = 0;
-    int chunkIndex = 0;
-    while (amountTransferred < data.size())
-    {
-        this->clientsMutex.lock();
-        for (int client : this->clients)
-        {
-            chunks++;
-
-            unsigned long currChunkSize = (std::min)((unsigned long)(data.size() - amountTransferred), (unsigned long)chunkSize);
-            std::vector<char>::const_iterator first = data.begin() + amountTransferred;
-            std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
-            std::vector<char> currChunk = std::vector(first, last);
-            
-            std::string filename = ("I-" + std::to_string(this->fileIndex) + "-C-" + std::to_string(chunkIndex++));
-            this->server.uploadFile(client, filename, &currChunk[0], currChunk.size());
-
-            amountTransferred += currChunkSize;
-            if (amountTransferred > data.size()) break;
-        }
-        this->clientsMutex.unlock();
-    }
-    this->fileIndex++;
-    file["chunks"] = chunks;
-    this->save["data"].push_back(file);
-    writeSaveFile();
-}
+    upload(data, filename); // Call the other (overloaded) "upload" method
+}*/
