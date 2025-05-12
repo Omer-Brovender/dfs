@@ -11,6 +11,7 @@
 #include <unistd.h>
 #elif _WIN32
 #include <WinSock2.h>
+#include <WS2tcpip.h>
 #endif
 #include <string>
 

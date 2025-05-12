@@ -16,11 +16,12 @@ int main()
         exit(1);
 #endif
     std::shared_ptr<MasterNode> master = std::make_shared<MasterNode>("");
-    WebServer server("", "");
+    std::cout << std::filesystem::current_path() << "\n";
+    WebServer server(".\\web", "");
     server.setMasterNode(master);
     std::thread t([] (WebServer& server) 
     {
-        server.start(8080);
+        server.start(80);
     }, std::ref(server));
 
 

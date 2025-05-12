@@ -240,7 +240,7 @@ void Socket::uploadFile(std::filesystem::path dir)
     std::cout << "fname:" << stringFilename << "\n";
 
     std::cout << "F: " << dir << " " << stringFilename << "\n";
-    std::vector<char> data = FileUtils::readFile(dir / stringFilename);
+    std::vector<char> data = FileUtils::readFile((dir / stringFilename).string());
     int dataLength = data.size();
 
     sendall((char*)&dataLength, sizeof(int));

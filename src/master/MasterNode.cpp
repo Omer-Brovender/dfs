@@ -5,7 +5,11 @@
 #include <iterator>
 #include <mutex>
 #include <string>
-#include <sys/socket.h>
+#ifdef _WIN32
+    #include <WinSock2.h>
+#else
+    #include <sys/socket.h>
+#endif
 #include <thread>
 #include <vector>
 #include "../common/Socket.hpp"

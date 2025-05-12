@@ -2,7 +2,7 @@
 #include <sqlite3.h>
 
 #ifdef _WIN32
-    #include <sha.h>
+    #include <openssl/sha.h>
 #else
     #include <openssl/sha.h>
 #endif

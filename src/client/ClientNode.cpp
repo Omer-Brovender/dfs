@@ -27,7 +27,7 @@ void ClientNode::handleUpload()
     std::string stringFilename;
     std::vector<char> data;
     this->client.downloadFile((int)NULL, &stringFilename, &data, false);
-    writeFile(std::filesystem::path(this->saveDirectory) / std::filesystem::path(stringFilename), data);
+    writeFile((std::filesystem::path(this->saveDirectory) / std::filesystem::path(stringFilename)).string(), data);
 }
 
 void ClientNode::handleDownload()

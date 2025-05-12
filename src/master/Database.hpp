@@ -2,7 +2,7 @@
 #define DATABASE_HPP
 
 #include <string>
-#include <sqlite3.h> 
+#include <winsqlite/winsqlite3.h> 
 #include <unordered_map>
 
 struct User 
