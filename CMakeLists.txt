@@ -5,7 +5,13 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 
 # === SQLite3 (system)
-find_package(SQLite3 REQUIRED)
+# find_package(SQLite3 REQUIRED)
+add_library(sqlite3 STATIC
+    include/sqlite/sqlite3.c
+)
+
+target_include_directories(sqlite3 PUBLIC include/sqlite)
+target_compile_definitions(sqlite3 PUBLIC SQLITE_THREADSAFE=1)
 
 # === Crow (as submodule)
 add_subdirectory(include/Crow)
