@@ -41,6 +41,7 @@ request.responseType = "json";
 request.open('GET', '/api/files', true);
 
 var fileID = -1;
+var filename = "";
 
 request.onload = () => {
     let files = request.response;
@@ -64,6 +65,7 @@ request.onload = () => {
         file.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             fileID = id;
+            filename = files[id];
 
             contextMenu.style.top = `${e.pageY}px`;
             contextMenu.style.left = `${e.pageX}px`;
@@ -80,7 +82,7 @@ request.onload = () => {
 downloadButton.addEventListener("click", () => {
     if (fileID >= 0) {
         const link = document.createElement("a");
-        link.href = `/api/download/${fileID}`;
+        link.href = `/api/download/${fileID}/${filename}`;
         link.download = "";
         document.body.appendChild(link);
         link.click();

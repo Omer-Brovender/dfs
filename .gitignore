@@ -3,3 +3,4 @@ build/
 compile_commands.json
 .cache/
 .vscode
+third_party/openssl/*/*

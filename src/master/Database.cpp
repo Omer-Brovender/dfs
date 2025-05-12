@@ -1,6 +1,12 @@
 #include "Database.hpp"
 #include <sqlite3.h>
-#include <openssl/sha.h>
+
+#ifdef _WIN32
+    #include <sha.h>
+#else
+    #include <openssl/sha.h>
+#endif
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>

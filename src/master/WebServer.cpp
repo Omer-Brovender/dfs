@@ -157,13 +157,13 @@ crow::response WebServer::download(const crow::request& req, int id)
     std::vector<char> fileData = this->master->downloadFile(id);
     std::cout << "Size: " << fileData.size() << "\n";
 
-    crow::response res;
-    res.set_header("Content-Type", "text/plain; boundary=<boundary>");
-    res.write("--<boundary>\n");
-    res.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + files.find(id)->second + "\"\n");
-    res.write("Content-Type: application/octet-stream\n");
-    res.write(fileData.data());
-    res.write("\n--<boundary>--");
+    //crow::response res;
+    //res.set_header("Content-Type", "text/plain; boundary=<boundary>");
+    //res.write("--<boundary>\n");
+    //res.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + files.find(id)->second + "\"\n");
+    //res.write("Content-Type: application/octet-stream\n");
+    //res.write(fileData.data());
+    //res.write("\n--<boundary>--");
     /*crow::multipart::header header;
     std::vector<crow::multipart::part> parts;
     crow::multipart::part part;
@@ -173,7 +173,7 @@ crow::response WebServer::download(const crow::request& req, int id)
     crow::ci_map map;
 
     return crow::multipart::message(map, "boundary", parts);*/
-    return res;
+    return crow::response(std::string(fileData.begin(), fileData.end()));
 }
 
 crow::response WebServer::files(const crow::request& req)
@@ -248,10 +248,10 @@ void WebServer::setupRoutes()
             }
         );
 
-    CROW_ROUTE(this->app, "/api/download/<int>")
+    CROW_ROUTE(this->app, "/api/download/<int>/<string>")
         .methods("GET"_method)
         (
-            [this](const crow::request& req, int id)
+            [this](const crow::request& req, int id, std::string s)
             {
                 return download(req, id);
             }
