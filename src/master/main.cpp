@@ -15,9 +15,13 @@ int main()
     if (wsaerr)
         exit(1);
 #endif
-    std::shared_ptr<MasterNode> master = std::make_shared<MasterNode>("");
+    std::string workingPathString;
+    std::cout << "Working path: ";
+    std::cin >> workingPathString;
+    std::filesystem::path workingPath(workingPathString);
+    std::shared_ptr<MasterNode> master = std::make_shared<MasterNode>(workingPath.string());
     std::cout << std::filesystem::current_path() << "\n";
-    WebServer server(".\\web", "");
+    WebServer server((workingPath / "web").string(), (workingPath / "db.sqlite").string());
     server.setMasterNode(master);
     std::thread t([] (WebServer& server) 
     {

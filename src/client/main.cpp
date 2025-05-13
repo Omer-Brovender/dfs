@@ -12,7 +12,13 @@ int main()
         exit(1);
 #endif
 
-    ClientNode client("127.0.0.1");
-    client.saveDirectory = "";
+    std::string IP;
+    std::cout << "Target IP: ";
+    std::cin >> IP;
+
+    ClientNode client(IP);
+    std::cout << "Path: ";
+    std::cin >> client.saveDirectory;
+    // client.saveDirectory = "C:\\Users\\omerb\\Documents\\testing\\";
     getchar();
 }
