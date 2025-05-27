@@ -13,10 +13,12 @@
 #include <unordered_map>
 #include <iostream>
 #include <vector>
+#include "Encryption.hpp"
 
 WebServer::WebServer(std::string webRoot, std::string dbPath)
-: db(dbPath.c_str())
+: db(dbPath.c_str()), webRoot(webRoot)
 {
+    std::filesystem::current_path(this->webRoot / "..");
     crow::mustache::set_global_base(webRoot);
     setupRoutes();
 }
@@ -29,6 +31,7 @@ void WebServer::setMasterNode(std::shared_ptr<MasterNode> master)
 void WebServer::start(std::uint16_t port)
 {
     this->app.port(port)
+        .ssl_file( (webRoot / ".." / "ssl" / "Certificate.crt").string(), (webRoot / ".." / "ssl" / "Certificate.key").string())
         .multithreaded()
         .run();
 }
@@ -74,7 +77,7 @@ crow::response WebServer::login(const crow::request& req)
     if (!data || !(data.has("email") && data.has("password")))
          return crow::response(400, crow::json::wvalue({{"success", false}}));
 
-    if (db.validateUser(std::string(data["email"]), std::string(data["password"]))) // TODO: Hash password first
+    if (db.validateUser(std::string(data["email"]), Encryption::sha256(std::string(data["password"])))) // TODO: Salt password
     {
         // Successful log in
         std::cout << "Logged in\n";
@@ -95,7 +98,7 @@ crow::response WebServer::signup(const crow::request& req)
     {
         std::string(data["username"]),
         std::string(data["email"]),
-        std::string(data["password"]),
+        Encryption::sha256(std::string(data["password"])),
     };
 
     if (db.registerUser(user)) // TODO: Hash password first

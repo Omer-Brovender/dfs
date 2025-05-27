@@ -4,5 +4,6 @@ compile_commands.json
 .cache/
 .vscode
 third_party
+ssl
 third_party/openssl/*/*
 third_party/sqlite3/*

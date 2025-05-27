@@ -19,6 +19,8 @@ int main()
     ClientNode client(IP);
     std::cout << "Path: ";
     std::cin >> client.saveDirectory;
-    // client.saveDirectory = "C:\\Users\\omerb\\Documents\\testing\\";
+
+    getchar();
+    getchar();
     getchar();
 }

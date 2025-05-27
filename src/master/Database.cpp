@@ -1,35 +1,22 @@
 #include "Database.hpp"
-#include <sqlite3.h>
+#include "Encryption.hpp"
 
-#ifdef _WIN32
-    #include <openssl/sha.h>
-#else
-    #include <openssl/sha.h>
-#endif
+#include <sqlite/sqlite3.h>
 
 #include <iostream>
-#include <iomanip>
 #include <sstream>
 #include <ctime>
 #include <unordered_map>
 
+constexpr unsigned char AES_KEY[32] = {
+    0xfa, 0x2e, 0xec, 0x1f, 0x45, 0xda, 0x79, 0xbe,
+    0x2b, 0x73, 0xae, 0xf2, 0x65, 0x7e, 0x7c, 0x81,
+    0x1f, 0x95, 0x1c, 0xc7, 0x1b, 0x0a, 0xb8, 0xd7,
+    0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4
+};
+
 constexpr int randMin = 1e6;
 constexpr int randMax = 1e7 - 1;
-
-std::string sha256(const std::string& s)
-{
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, s.c_str(), s.size());
-    SHA256_Final(hash, &sha256);
-    std::stringstream ss;
-    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-    {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    }
-    return ss.str();
-}
 
 Database::Database(const char* filename)
 {
@@ -97,8 +84,11 @@ bool Database::execQuery(std::string& sql, std::string& failMessage, std::string
 
 User Database::getUser(std::string sessionID)
 {
+    std::string encryptedSession;
+    Encryption::encrypt(sessionID, encryptedSession, AES_KEY);
+
     std::string sql = "SELECT * FROM users"
-                    " WHERE session='" + sessionID
+                    " WHERE session='" + encryptedSession
                     + "';";
 
     struct sqlite3_stmt *selectstmt;
@@ -118,7 +108,15 @@ User Database::getUser(std::string sessionID)
         auto passhash = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 2)));
         auto email    = std::string(reinterpret_cast<const char*> (sqlite3_column_text(selectstmt, 3)));
 
-        ret = User{username, email, passhash, id};
+        std::string decryptedUsername;
+        std::string decryptedPassHash;
+        std::string decryptedEmail;
+
+        Encryption::decrypt(username, decryptedUsername, AES_KEY);
+        Encryption::decrypt(passhash, decryptedPassHash, AES_KEY);
+        Encryption::decrypt(email,    decryptedEmail,    AES_KEY);
+
+        ret = User{decryptedUsername, decryptedEmail, decryptedPassHash, id};
     } 
     else 
     {
@@ -131,11 +129,19 @@ User Database::getUser(std::string sessionID)
 
 bool Database::registerUser(struct User user)
 {
+    std::string encryptedUsername;
+    std::string encryptedPasshash;
+    std::string encryptedEmail;
+
+    Encryption::encrypt(user.username, encryptedUsername, AES_KEY);
+    Encryption::encrypt(user.passHash, encryptedPasshash, AES_KEY);
+    Encryption::encrypt(user.email,    encryptedEmail,    AES_KEY);
+
     std::string sql = "INSERT INTO users (username, passhash, email)"
                         " VALUES ('" 
-                        + user.username + "', '" 
-                        + user.passHash + "', '" 
-                        + user.email 
+                        + encryptedUsername + "', '" 
+                        + encryptedPasshash + "', '" 
+                        + encryptedEmail 
                         + "');";
 
     std::string failMessage = "Failed to register user.";
@@ -150,9 +156,15 @@ bool Database::registerUser(struct User user)
 
 bool Database::validateUser(std::string email, std::string passHash)
 {
+    std::string encryptedPasshash;
+    std::string encryptedEmail;
+
+    Encryption::encrypt(passHash, encryptedPasshash, AES_KEY);
+    Encryption::encrypt(email, encryptedEmail, AES_KEY);
+
     std::string sql = "SELECT * FROM users"
-                        " WHERE email='" + email
-                        + "' AND passhash='" + passHash 
+                        " WHERE email='" + encryptedEmail
+                        + "' AND passhash='" + encryptedPasshash 
                         + "';";
 
     return rowExists(sql);
@@ -212,10 +224,13 @@ std::string Database::generateSession(std::string email)
     std::srand(std::time({}));
     
     int sessionIDNum = std::rand() % (randMax - randMin + 1) + randMin;
-    std::string sessionID = sha256(std::to_string(sessionIDNum));
+    std::string sessionID = Encryption::sha256(std::to_string(sessionIDNum));
+
+    std::string encryptedSession;
+    Encryption::encrypt(sessionID, encryptedSession, AES_KEY);
     
     std::string sql = "SELECT * FROM users"
-                        " WHERE session='" + sessionID
+                        " WHERE session='" + encryptedSession
                         + "';";
     
     bool exists = rowExists(sql);
@@ -223,9 +238,12 @@ std::string Database::generateSession(std::string email)
     if (exists)
         return generateSession(email);
 
+    std::string encryptedEmail;
+    Encryption::encrypt(email, encryptedEmail, AES_KEY);
+
     sql = "UPDATE users"
-            " SET session = '" + sessionID + "'"
-            " WHERE email='" + email + "'";
+            " SET session = '" + encryptedSession + "'"
+            " WHERE email='" + encryptedEmail + "'";
     
     std::string failMessage = "Failed to update session.";
     std::string sccMessage = "Successfuly updated session.";
@@ -241,8 +259,11 @@ std::string Database::generateSession(std::string email)
 
 bool Database::validateSession(std::string sessionID)
 {
+    std::string encryptedSession;
+    Encryption::encrypt(sessionID, encryptedSession, AES_KEY);
+
     std::string sql = "SELECT * FROM users"
-                        " WHERE session='" + sessionID
+                        " WHERE session='" + encryptedSession
                         + "';";
     
     return rowExists(sql);

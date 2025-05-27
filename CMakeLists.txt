@@ -6,20 +6,29 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(third_party/)
 
-# === SQLite3 (from amalgamation source) ===
-add_library(sqlite3 STATIC
-    third_party/sqlite/sqlite3.c
-)
-target_include_directories(sqlite3 PUBLIC third_party/sqlite)
-target_compile_definitions(sqlite3 PUBLIC SQLITE_THREADSAFE=1)
+# === SQLCipher ===
+#add_library(sqlcipher STATIC
+#    third_party/sqlcipher/sqlite3.c
+#)
+#set_source_files_properties(third_party/sqlcipher/sqlite3.c PROPERTIES LANGUAGE C)
+#target_include_directories(sqlcipher PUBLIC third_party/sqlcipher)
+#target_compile_definitions(sqlcipher PUBLIC
+#    SQLITE_HAS_CODEC=1
+#    SQLITE_TEMP_STORE=2
+#    SQLITE_THREADSAFE=1
+#    SQLITE_OS_WIN=1
+#    SQLITE_ENABLE_X86_PCLMUL=1
+#    SQLITE_ENABLE_FTS5=1
+#    SQLITE_ENABLE_RTREE=1
+#    _XOPEN_SOURCE=700
+#    SQLITE_EXTRA_INIT=sqlcipher_extra_init
+#    SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
+#)
 
-# === ASIO (header-only, as submodule) ===
+# === ASIO ===
 set(ASIO_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/asio/asio/include")
 include_directories(${ASIO_INCLUDE_DIR})
 add_definitions(-DASIO_STANDALONE)
-
-# === Crow (as submodule) ===
-add_subdirectory(include/Crow)
 
 # === OpenSSL ===
 if (WIN32)
@@ -51,6 +60,18 @@ else()
     find_package(OpenSSL REQUIRED)
 endif()
 
+# === SQLite3 ===
+add_library(sqlite3 STATIC
+    third_party/sqlite/sqlite3.c
+)
+
+target_include_directories(sqlite3 PUBLIC third_party/sqlite)
+target_compile_definitions(sqlite3 PUBLIC SQLITE_THREADSAFE=1)
+
+# === Crow ===
+add_subdirectory(include/Crow)
+add_definitions(-DCROW_ENABLE_SSL)
+
 # === Common Library ===
 add_library(common
     src/common/Socket.cpp
@@ -69,6 +90,7 @@ add_executable(master
     src/master/MasterNode.cpp
     src/master/WebServer.cpp
     src/master/Database.cpp
+    src/master/Encryption.cpp
 )
 target_include_directories(master PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(master PRIVATE sqlite3 common OpenSSL::SSL OpenSSL::Crypto)
@@ -94,7 +116,7 @@ if (WIN32)
                 $<TARGET_FILE_DIR:${target}>
         )
 
-        # Copy "web" and "static" folders
+        # Copy "web", "static" and "ssl" folders
         add_custom_command(TARGET ${target} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${PROJECT_SOURCE_DIR}/web"
@@ -102,6 +124,9 @@ if (WIN32)
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${PROJECT_SOURCE_DIR}/static"
                 "$<TARGET_FILE_DIR:${target}>/static"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${PROJECT_SOURCE_DIR}/ssl"
+                "$<TARGET_FILE_DIR:${target}>/ssl"
         )
     endforeach()
 endif()

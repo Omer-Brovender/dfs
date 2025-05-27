@@ -24,7 +24,7 @@ private:
     std::shared_ptr<MasterNode> master;
 
     crow::App<crow::CookieParser> app;
-    std::string webRoot;
+    std::filesystem::path webRoot;
     crow::response rootPage(const crow::request& req);
     crow::response loginPage(const crow::request& req);
     crow::response login(const crow::request& req);

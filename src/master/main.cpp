@@ -25,7 +25,7 @@ int main()
     server.setMasterNode(master);
     std::thread t([] (WebServer& server) 
     {
-        server.start(80);
+        server.start(443);
     }, std::ref(server));
 
 
