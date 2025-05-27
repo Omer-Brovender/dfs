@@ -14,6 +14,7 @@
 #include <iostream>
 #include <vector>
 #include "Encryption.hpp"
+#include "LoginAttemptTracker.hpp"
 
 WebServer::WebServer(std::string webRoot, std::string dbPath)
 : db(dbPath.c_str()), webRoot(webRoot)
@@ -73,26 +74,32 @@ crow::response WebServer::loginPage(const crow::request& req)
 
 crow::response WebServer::login(const crow::request& req)
 {
+    static LoginAttemptTracker attemptTracker;
+    std::string ip = req.remote_ip_address;
+
+    if (!attemptTracker.allowLogin(ip))
+        return crow::response(429, "Too many failed attempts. Try again later.");
+
     auto data = crow::json::load(req.body);
     if (!data || !(data.has("email") && data.has("password")))
-         return crow::response(400, crow::json::wvalue({{"success", false}}));
+         return crow::response(400, "Missing email/password.");
 
     if (db.validateUser(std::string(data["email"]), Encryption::sha256(std::string(data["password"])))) // TODO: Salt password
     {
-        // Successful log in
-        std::cout << "Logged in\n";
+        attemptTracker.reset(ip);
         std::string session = db.generateSession(std::string(data["email"]));
-        return crow::response(200, crow::json::wvalue({{"success", true}, {"session", session}}));
+        return crow::response(200, crow::json::wvalue({{"session", session}}));
     }
 
-    return crow::response(401, crow::json::wvalue({{"success", false}}));
+    attemptTracker.recordFailure(ip);
+    return crow::response(401, "Email and/or password were incorrect");
 }
 
 crow::response WebServer::signup(const crow::request& req)
 {
     auto data = crow::json::load(req.body);
     if (!data || !(data.has("username") && data.has("email") && data.has("password")))
-        return crow::response(400);
+        return crow::response(400, "Malformed Request");
     
     struct User user
     {
@@ -104,10 +111,10 @@ crow::response WebServer::signup(const crow::request& req)
     if (db.registerUser(user)) // TODO: Hash password first
     {
         // Successful registration
-        std::cout << "Registered\n";
+        return crow::response(200, "Successfully Registered");
     }
 
-    return crow::response(200);
+    return crow::response(403, "Couldn't register, email/username weren't unique");
 }
 
 crow::response WebServer::upload(const crow::request& req)
@@ -160,22 +167,6 @@ crow::response WebServer::download(const crow::request& req, int id)
     std::vector<char> fileData = this->master->downloadFile(id);
     std::cout << "Size: " << fileData.size() << "\n";
 
-    //crow::response res;
-    //res.set_header("Content-Type", "text/plain; boundary=<boundary>");
-    //res.write("--<boundary>\n");
-    //res.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + files.find(id)->second + "\"\n");
-    //res.write("Content-Type: application/octet-stream\n");
-    //res.write(fileData.data());
-    //res.write("\n--<boundary>--");
-    /*crow::multipart::header header;
-    std::vector<crow::multipart::part> parts;
-    crow::multipart::part part;
-    part.body = std::string(fileData.data());
-    part.headers.insert({{"content-disposition"}, {"mime/type; name=\"file\"; filename=" + files.find(id)->second}});
-    parts.push_back(part);
-    crow::ci_map map;
-
-    return crow::multipart::message(map, "boundary", parts);*/
     return crow::response(std::string(fileData.begin(), fileData.end()));
 }
 

@@ -5,6 +5,14 @@ const showLogin = document.getElementById("show-login");
 const signupForm = document.getElementById("signup-form");
 const loginForm = document.getElementById("login-form");
 
+const successBox = document.getElementById("success-box");
+const errorBox   = document.getElementById("error-box");
+
+function hideBoxes() {
+    successBox.classList.remove("active");
+    errorBox.classList.remove("active");
+}
+
 showSignup.addEventListener("click", (e) => {
     e.preventDefault();
     loginFormDiv.classList.remove("active");
@@ -27,7 +35,15 @@ signupForm.addEventListener('submit', async function (e) {
         body: JSON.stringify(Object.fromEntries(formData)),
     });
 
-    const result = await response.json();
+    const result = await response.text();
+    hideBoxes();
+    if (response.ok) {
+        successBox.classList.add("active");
+        successBox.innerHTML = result;
+    } else {
+        errorBox.classList.add("active");
+        errorBox.innerHTML = result;
+    }
     console.log(result);
 });
 
@@ -41,14 +57,17 @@ loginForm.addEventListener('submit', async function (e) {
         body: JSON.stringify(Object.fromEntries(formData)),
     });
 
-    const result = await response.json();
-    console.log(result);
+    hideBoxes();
     
-    if (response.ok && result.success) {
+    if (response.ok) {
+        const result = await response.json();
         console.log("sessionID=" + result.session + "; HttpOnly; SameSite=Strict");
         document.cookie = "sessionID=" + result.session + "; SameSite=Strict";
         location.reload();
     } else {
+        textResult = await response.text();
+        errorBox.classList.add("active");
+        errorBox.innerHTML = textResult;
         console.error("Login failed");
     }
 });

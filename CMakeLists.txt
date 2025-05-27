@@ -91,6 +91,7 @@ add_executable(master
     src/master/WebServer.cpp
     src/master/Database.cpp
     src/master/Encryption.cpp
+    src/master/LoginAttemptTracker.cpp
 )
 target_include_directories(master PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(master PRIVATE sqlite3 common OpenSSL::SSL OpenSSL::Crypto)
