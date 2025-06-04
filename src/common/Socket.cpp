@@ -107,7 +107,7 @@ void Socket::send(int fd, char* data, size_t size)
     if (res == -1) std::cout << "Failed to send. Error number: " << errno << "\n";
 }
 
-void Socket::sendall(int fd, char* data, size_t size)
+int Socket::sendall(int fd, char* data, size_t size)
 {
     int total = 0;        // how many bytes we've sent
     int bytesleft = size; // how many we have left to send
@@ -115,13 +115,15 @@ void Socket::sendall(int fd, char* data, size_t size)
 
     while(total < size) {
         n = ::send(fd, data+total, bytesleft, 0);
-        if (n == -1) { break; }
+        if (n == -1) return -1;
         total += n;
         bytesleft -= n;
     }
+
+    return total;
 }
 
-void Socket::sendall(char* data, size_t size)
+int Socket::sendall(char* data, size_t size)
 {
     int total = 0;        
     int bytesleft = size; 
@@ -129,22 +131,26 @@ void Socket::sendall(char* data, size_t size)
 
     while(total < size) {
         n = ::send(this->fileDesc, data+total, bytesleft, 0);
-        if (n == -1) { break; }
+        if (n == -1) return -1;
         total += n;
         bytesleft -= n;
     }
+
+    return total;
 }
 
-void Socket::recvall(int fd, char* buffer, size_t size)
+int Socket::recvall(int fd, char* buffer, size_t size)
 {
     int res = ::recv(fd, buffer, size, MSG_WAITALL); 
     if (res == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
+    return res;
 }
 
-void Socket::recvall(char* buffer, size_t size)
+int Socket::recvall(char* buffer, size_t size)
 {
     int res = ::recv(this->fileDesc, buffer, size, MSG_WAITALL); 
     if (res == -1) std::cout << "Failed to receive. Error number: " << errno << "\n";
+    return res;
 }
 
 void Socket::recv(char* buffer, size_t size)
@@ -216,7 +222,7 @@ void Socket::downloadFile(int target, std::string* outFilename, std::vector<char
     }
 }
 
-void Socket::initiateUploadFile(int client, std::string& filename, char* data, int dataLength)
+int Socket::initiateUploadFile(int client, std::string& filename, char* data, int dataLength)
 {
     int filenameLength = filename.length();
     PacketType action = PacketType::UPLOAD;
@@ -225,7 +231,7 @@ void Socket::initiateUploadFile(int client, std::string& filename, char* data, i
     sendall(client, (char*)&filenameLength, sizeof(int));
     sendall(client, &filename[0], filenameLength);
     sendall(client, (char*)&dataLength, sizeof(int));
-    sendall(client, data, dataLength);
+    return sendall(client, data, dataLength);
 }
 
 void Socket::uploadFile(std::filesystem::path dir)

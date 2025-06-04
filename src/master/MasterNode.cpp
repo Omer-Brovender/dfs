@@ -174,8 +174,6 @@ void MasterNode::upload(std::vector<char>& data, int id)
         this->clientsMutex.lock();
         for (auto [ip, client] : this->clients)
         {
-            chunks++;
-
             // Determine current chunk size
             unsigned long currChunkSize = (std::min)((unsigned long)(data.size() - amountTransferred), (unsigned long)chunkSize);
 
@@ -188,11 +186,17 @@ void MasterNode::upload(std::vector<char>& data, int id)
             std::string filename = ("I-" + std::to_string(id) + "-C-" + std::to_string(chunkIndex++));
 
             // Upload the chunk to the client
-            this->server.initiateUploadFile(client, filename, &currChunk[0], currChunk.size());
+            int status = this->server.initiateUploadFile(client, filename, &currChunk[0], currChunk.size());
+            if (status <= 0) 
+            {
+                std::cout << "Client disconnected during packet upload! Ignoring...\n";
+                continue;
+            }
 
             // Track which client received this chunk
             chunkInfo.push_back(std::string(ip));
-
+            chunks++;
+        
             // Update total amount transferred
             amountTransferred += currChunkSize;
 

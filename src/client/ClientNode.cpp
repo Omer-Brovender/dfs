@@ -42,7 +42,14 @@ void ClientNode::handleServer()
         std::cout << "Listening...\n";
 
         PacketType action;
-        this->client.recvall((char*)&action, sizeof(PacketType));
+        int read = this->client.recvall((char*)&action, sizeof(PacketType));
+
+        if (read <= 0)
+        {
+            std::cout << "Connection to server broken!\n";
+            this->client.close();
+            exit(1);
+        }
 
         switch(action)
         {
