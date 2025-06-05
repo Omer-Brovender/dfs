@@ -36,6 +36,22 @@ document.addEventListener("click", (e) => {
     }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.querySelector('.searchbar');
+
+  searchInput.addEventListener("input", () => {
+    const fileItems = document.querySelectorAll('.file');
+    const query = searchInput.value.toLowerCase();
+
+    fileItems.forEach(file => {
+      const fileName = file.querySelector('.name').textContent.toLowerCase();
+      const isMatch = fileName.includes(query);
+      file.style.display = isMatch ? 'flex' : 'none';
+    });
+  });
+});
+
+
 const request = new XMLHttpRequest();
 request.responseType = "json";
 request.open('GET', '/api/files', true);

@@ -182,8 +182,9 @@ void MasterNode::upload(std::vector<char>& data, int id)
             std::vector<char>::const_iterator last = data.begin() + amountTransferred + currChunkSize;
             std::vector<char> currChunk = std::vector(first, last);
 
+
             // Generate unique filename for the chunk
-            std::string filename = ("I-" + std::to_string(id) + "-C-" + std::to_string(chunkIndex++));
+            std::string filename = ("I-" + std::to_string(id) + "-C-" + std::to_string(chunkIndex));
 
             // Upload the chunk to the client
             int status = this->server.initiateUploadFile(client, filename, &currChunk[0], currChunk.size());
@@ -196,12 +197,13 @@ void MasterNode::upload(std::vector<char>& data, int id)
             // Track which client received this chunk
             chunkInfo.push_back(std::string(ip));
             chunks++;
+            chunkIndex++;
         
             // Update total amount transferred
             amountTransferred += currChunkSize;
 
             // Stop if we've uploaded all data
-            if (amountTransferred > data.size()) break;
+            if (amountTransferred >= data.size()) break;
         }
         this->clientsMutex.unlock();
     }
